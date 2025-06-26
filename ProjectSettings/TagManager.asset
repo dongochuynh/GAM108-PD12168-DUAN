@@ -5,6 +5,12 @@ TagManager:
   serializedVersion: 3
   tags:
   - Ground
+  - Stairs
+  - Enemy
+  - Wall
+  - Triangle
+  - Water
+  - Bullet
   layers:
   - Default
   - TransparentFX
@@ -12,8 +18,8 @@ TagManager:
   - Player
   - Water
   - UI
-  - 
-  - 
+  - Ground
+  - Bullet
   - 
   - 
   - 

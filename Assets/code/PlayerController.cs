@@ -1,5 +1,17 @@
 ﻿using UnityEngine;
 
+// Ensure the Bullet class is defined and accessible
+public class Bullet : MonoBehaviour
+{
+    public Vector2 bulletDirection; // Renamed to avoid ambiguity
+
+    void Update()
+    {
+        // Example movement logic for the bullet
+        transform.Translate(bulletDirection * Time.deltaTime);
+    }
+}
+
 public class PlayerController : MonoBehaviour
 {
     private Rigidbody2D rb;
@@ -8,6 +20,11 @@ public class PlayerController : MonoBehaviour
 
     public float movespeed = 2f;
     public float jumpForce = 3f;
+    private bool canClimb = false;
+    public float climbSpeed = 2f;
+
+    public GameObject bulletPrefab;
+    public Transform firePoint;
 
     void Start()
     {
@@ -28,42 +45,43 @@ public class PlayerController : MonoBehaviour
         animator.SetFloat("xVel", Mathf.Abs(moveInput));
 
         // Kiểm tra trạng thái chạy (Running)
-        if (Mathf.Abs(moveInput) > 0.01f)  // Nếu có chuyển động
+        if (Mathf.Abs(moveInput) > 0.01f)
         {
-            animator.SetBool("isRunning", true);  // Kích hoạt trạng thái chạy
+            animator.SetBool("isRunning", true);
         }
         else
         {
-            animator.SetBool("isRunning", false);  // Tắt trạng thái chạy khi không di chuyển
+            animator.SetBool("isRunning", false);
         }
 
         // Quay nhân vật qua lại (lật hình ảnh của nhân vật)
         if (moveInput > 0)
         {
-            sprite.flipX = false;  // Quay mặt nhân vật sang phải
+            sprite.flipX = false;
         }
         else if (moveInput < 0)
         {
-            sprite.flipX = true;   // Quay mặt nhân vật sang trái
+            sprite.flipX = true;
         }
 
         // Xử lý nhảy (phím Space)
         if (Input.GetKeyDown(KeyCode.Space))
         {
-            rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);  // Áp dụng lực nhảy
-            animator.SetTrigger("doJump");  // Kích hoạt trigger nhảy
+            rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
+            animator.SetTrigger("doJump");
         }
 
         // Xử lý lăn (phím Shift trái/phải)
         if ((Input.GetKeyDown(KeyCode.LeftShift) || Input.GetKeyDown(KeyCode.RightShift)) && Mathf.Abs(moveInput) > 0.1f)
         {
-            animator.SetTrigger("doRoll");  // Kích hoạt trigger lăn
-            animator.SetBool("isRunning", false);  // Tắt trạng thái chạy khi lăn
+            animator.SetTrigger("doRoll");
+            animator.SetBool("isRunning", false);
         }
 
         // Xử lý leo (phím F)
-        if (Input.GetKeyDown(KeyCode.F))
+        if (Input.GetKey(KeyCode.F) && canClimb)
         {
+            rb.linearVelocity = new Vector2(rb.linearVelocity.x, climbSpeed);
             animator.SetTrigger("isEscalate");
         }
 
@@ -71,6 +89,43 @@ public class PlayerController : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.G))
         {
             animator.SetTrigger("isWorried");
+            Shoot();
+        }
+    }
+
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+        if (collision.CompareTag("Stairs"))
+        {
+            canClimb = true;
+        }
+        else if (collision.CompareTag("Triangle"))
+        {
+            // Player chết khi chạm hình tam giác
+            Destroy(gameObject);
+            // Hiện màn hình Game Over
+            GameOverManager.Instance.ShowGameOver();
+        }
+    }
+
+    private void OnTriggerExit2D(Collider2D collision)
+    {
+        if (collision.CompareTag("Stairs"))
+        {
+            canClimb = false;
+        }
+    }
+
+    private void Shoot()
+    {
+        if (bulletPrefab != null && firePoint != null)
+        {
+            GameObject bullet = Instantiate(bulletPrefab, firePoint.position, Quaternion.identity);
+
+            if (bullet.TryGetComponent(out Bullet bulletScript)) // Use TryGetComponent to avoid allocation
+            {
+                bulletScript.bulletDirection = sprite.flipX ? Vector2.left : Vector2.right; // Updated to use renamed property
+            }
         }
     }
 }
